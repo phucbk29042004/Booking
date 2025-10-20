@@ -1,0 +1,323 @@
+"use client"
+
+import React, { useState } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, Image, Modal } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+
+const menuData = {
+  khaiVi: [
+    { id: "5", ten: "Gỏi cuốn tôm thịt" },
+    { id: "9", ten: "Salad rau trộn dầu giấm" },
+  ],
+  monChinh: [
+    { id: "2", ten: "Phở bò tái" },
+    { id: "1", ten: "Cơm chiên hải sản" },
+    { id: "3", ten: "Mì xào bò" },
+    { id: "6", ten: "Bò lúc lắc" },
+    { id: "7", ten: "Cá hồi nướng bơ tỏi" },
+    { id: "8", ten: "Cánh gà chiên nước mắm" },
+    { id: "4", ten: "Lẩu thái hải sản" },
+    { id: "10", ten: "Sườn nướng mật ong" },
+    { id: "13", ten: "Cơm tấm sườn bì chả" },
+    { id: "12", ten: "Cháo hải sản" },
+    { id: "14", ten: "Mì Ý sốt bò bằm" },
+    { id: "11", ten: "Tôm hấp bia" },
+  ],
+  monPhu: [],
+  doUongTrangMieng: [
+    { id: "15", ten: "Trà đào cam sả" },
+    { id: "16", ten: "Cà phê đá" },
+    { id: "17", ten: "Nước ép cam" },
+    { id: "18", ten: "Sinh tố bơ" },
+    { id: "19", ten: "Kem dâu" },
+    { id: "20", ten: "Chè đậu xanh" },
+    { id: "21", ten: "Bánh flan" },
+    { id: "22", ten: "Nước ngọt các loại" },
+  ],
+}
+
+type TabKey = keyof typeof menuData
+
+export default function MenuScreen({ route }: any) {
+  const initialTab = route?.params?.initialTab || "khaiVi"
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab as TabKey)
+  const [search, setSearch] = useState("")
+  const [detailVisible, setDetailVisible] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<{ id: string; ten: string } | null>(null)
+
+  React.useEffect(() => {
+    if (route?.params?.initialTab) {
+      setActiveTab(route.params.initialTab as TabKey)
+    }
+  }, [route?.params?.initialTab])
+
+  const filteredMenu = menuData[activeTab].filter((item) => item.ten.toLowerCase().includes(search.toLowerCase()))
+
+  const openDetail = (item: { id: string; ten: string }) => {
+    setSelectedItem(item)
+    setDetailVisible(true)
+  }
+
+  const closeDetail = () => setDetailVisible(false)
+
+  const renderMenuItem = ({ item }: { item: { id: string; ten: string } }) => (
+    <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => openDetail(item)}>
+      <View style={styles.iconContainer}>
+        <Ionicons name="restaurant-outline" size={20} color="#0066CC" />
+      </View>
+      <Text style={styles.menuText}>{item.ten}</Text>
+      <Ionicons name="chevron-forward" size={18} color="#D0D5DD" />
+    </TouchableOpacity>
+  )
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.tabContainer}>
+        {[
+          { key: "khaiVi", label: "Khai vị" },
+          { key: "monChinh", label: "Món chính" },
+          { key: "monPhu", label: "Món phụ" },
+          { key: "doUongTrangMieng", label: "Đồ uống & Tráng miệng" },
+        ].map((tab) => (
+          <TouchableOpacity
+            key={tab.key}
+            style={[styles.tabButton, activeTab === (tab.key as TabKey) && styles.activeTab]}
+            onPress={() => {
+              setActiveTab(tab.key as TabKey)
+              setSearch("")
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === (tab.key as TabKey) && styles.activeTabText]}>{tab.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.searchContainer}>
+        <Ionicons name="search-outline" size={20} color="#0066CC" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Tìm món ăn..."
+          placeholderTextColor="#A0A8B8"
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
+      <FlatList
+        data={filteredMenu}
+        keyExtractor={(item) => item.id}
+        renderItem={renderMenuItem}
+        ListEmptyComponent={<Text style={styles.emptyText}>Không có món trong mục này</Text>}
+        contentContainerStyle={{ paddingVertical: 8 }}
+        scrollEnabled={true}
+      />
+
+      <Modal visible={detailVisible} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Image source={{ uri: "https://picsum.photos/seed/food/600/360" }} style={styles.modalImage} />
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>{selectedItem?.ten}</Text>
+              <Text style={styles.modalPrice}>Giá: 89.000đ</Text>
+              <Text style={styles.modalDesc}>
+                Món ăn được chế biến tươi mỗi ngày, hương vị đậm đà. Bạn có thể thêm ghi chú khi gọi món.
+              </Text>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.btnGhost} onPress={closeDetail}>
+                  <Text style={styles.btnGhostText}>Đóng</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnPrimary} onPress={closeDetail}>
+                  <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                  <Text style={styles.btnPrimaryText}>Thêm vào chọn</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 12,
+    paddingTop: 12,
+  },
+
+  tabContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    backgroundColor: "#E8F0FF",
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  activeTab: {
+    backgroundColor: "#0066CC",
+  },
+  tabText: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+  activeTabText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  searchInput: {
+    marginLeft: 8,
+    flex: 1,
+    fontSize: 14,
+    color: "#1E293B",
+  },
+
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#E8F0FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuText: {
+    flex: 1,
+    fontSize: 14,
+    color: "#1E293B",
+    fontWeight: "500",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#94A3B8",
+    marginTop: 32,
+    fontSize: 14,
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalCard: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalImage: {
+    width: "100%",
+    height: 200,
+  },
+  modalContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 8,
+  },
+  modalPrice: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0066CC",
+    marginBottom: 12,
+  },
+  modalDesc: {
+    fontSize: 13,
+    color: "#64748B",
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  btnGhost: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnGhostText: {
+    color: "#64748B",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  btnPrimary: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: "#0066CC",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 6,
+    shadowColor: "#0066CC",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  btnPrimaryText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+})
