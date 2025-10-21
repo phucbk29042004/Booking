@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -11,6 +11,9 @@ import {
   Alert,
   Modal,
   TextInput,
+  Animated,
+  Vibration,
+ 
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { GetDanhSachBanAn, SetTrangThai1, SetTrangThai2, BanAnResponse } from "../../services/banAnService"
@@ -52,12 +55,43 @@ export default function BookingScreen() {
   const [ghiChu, setGhiChu] = useState<string>("")
   const [menuData, setMenuData] = useState<MenuItem[]>([])
   const [danhSachYeuThich, setDanhSachYeuThich] = useState<MenuItem[]>([])
+  const [heldTableId, setHeldTableId] = useState<number | null>(null)
+  
+  // Animation refs cho hiệu ứng hold
+  const scaleAnimations = useRef<{ [key: number]: Animated.Value }>({})
+  const holdAnimations = useRef<{ [key: number]: Animated.Value }>({})
 
   // Load dữ liệu bàn từ API và taiKhoanId từ storage
   useEffect(() => {
     loadTables()
     loadTaiKhoanId()
   }, [])
+
+  // Function để refresh dữ liệu
+  const refreshData = async () => {
+    try {
+      setLoading(true)
+      await loadTables()
+      console.log('Đã refresh dữ liệu bàn')
+    } catch (error) {
+      console.error('Lỗi khi refresh dữ liệu:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Function để reset hoàn toàn state
+  const resetBookingState = () => {
+    setModalVisible(false)
+    setSelectedMenu([])
+    setCurrentSelectedTableId(null)
+    setSelectedTable(null)
+    setGhiChu("")
+    setSoNguoi(1)
+    setSearch("")
+    setExpandedCategories([])
+    console.log('Đã reset booking state')
+  }
 
   const loadTaiKhoanId = async () => {
     try {
@@ -120,6 +154,12 @@ export default function BookingScreen() {
         soGhe: Math.floor(Math.random() * 6) + 4, // Tạm thời random, có thể lấy từ API sau
         monAn: []
       }))
+      
+      // Khởi tạo animation values cho mỗi bàn
+      formattedTables.forEach(table => {
+        scaleAnimations.current[table.id] = new Animated.Value(1)
+        holdAnimations.current[table.id] = new Animated.Value(0)
+      })
       
       console.log('Dữ liệu đã format:', formattedTables)
       setTables(formattedTables)
@@ -214,27 +254,53 @@ export default function BookingScreen() {
       // Gọi API đặt bàn
       const response = await DatBan(datBanRequest)
       console.log('Response từ API:', response)
+      console.log('Response statusCode:', response.statusCode)
+      console.log('Response message:', response.message)
 
-      if (response.statusCode === 200) {
-        // Cập nhật local state
-        const updatedTables: Table[] = tables.map((t) =>
-          t.id === selectedTable.id
-            ? { ...t, trangThai: 2, monAn: selectedMenu }
-            : t,
-        )
+      // Kiểm tra response thành công - có thể response không có statusCode
+      // Hoặc có thể response trực tiếp là object với message và donDatBanId
+      const isSuccess = response.statusCode === 200 || 
+                        response.statusCode === 201 || 
+                        (response.message && response.message.includes("thành công")) ||
+                        response.donDatBanId > 0
 
-        setTables(updatedTables)
-        setModalVisible(false)
-        setSelectedMenu([])
-        setCurrentSelectedTableId(null)
-        setGhiChu("")
+      console.log('isSuccess:', isSuccess)
 
+      if (isSuccess) {
+        // Lưu thông tin bàn trước khi reset
+        const tableName = selectedTable?.tenBan
+        const tableId = selectedTable?.id
+        const menuCount = selectedMenu.length
+        const donDatBanId = response.donDatBanId
+
+        // Cập nhật trạng thái bàn thành "đã đặt" (trạng thái 2) TRƯỚC KHI reset
+        try {
+          if (tableId) {
+            await SetTrangThai2(tableId)
+            console.log('Đã cập nhật trạng thái bàn thành đã đặt')
+          }
+        } catch (error) {
+          console.error('Lỗi khi cập nhật trạng thái bàn:', error)
+        }
+
+        // Reset state TRƯỚC KHI hiển thị alert
+        resetBookingState()
+
+        // Reload danh sách bàn từ server để đảm bảo đồng bộ
+        await refreshData()
+
+        // Hiển thị alert thành công
         Alert.alert(
           "✅ Đặt bàn thành công!",
-          `Bàn ${selectedTable.tenBan} đã được đặt với ${selectedMenu.length} món.\nMã đơn: ${response.donDatBanId}`,
+          `Bàn ${tableName} đã được đặt với ${menuCount} món.\nMã đơn: ${donDatBanId}`,
         )
       } else {
-        Alert.alert("Lỗi", response.message || "Không thể đặt bàn. Vui lòng thử lại.")
+        // Hiển thị alert lỗi với thông tin debug
+        console.log('Response không thành công:', response)
+        Alert.alert(
+          "Lỗi", 
+          response.message || "Không thể đặt bàn. Vui lòng thử lại.\nDebug: " + JSON.stringify(response)
+        )
       }
     } catch (error) {
       console.error('Lỗi khi đặt bàn:', error)
@@ -315,7 +381,21 @@ export default function BookingScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chọn Bàn</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.headerTitle}>Chọn Bàn</Text>
+          <TouchableOpacity 
+            style={styles.refreshButton}
+            onPress={refreshData}
+            disabled={loading}
+          >
+            <Ionicons 
+              name="refresh" 
+              size={24} 
+              color="#fff" 
+              style={loading ? styles.refreshIconRotating : {}}
+            />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.legend}>
           <View style={styles.legendItem}>
@@ -460,7 +540,7 @@ export default function BookingScreen() {
 
             <TouchableOpacity
               style={styles.cancelBtn}
-              onPress={() => setModalVisible(false)}
+              onPress={resetBookingState}
             >
               <Text style={styles.cancelText}>Hủy</Text>
             </TouchableOpacity>
@@ -480,11 +560,26 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
   headerTitle: {
     fontSize: 22,
     fontWeight: "bold",
     color: "#fff",
+    flex: 1,
     textAlign: "center",
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  refreshIconRotating: {
+    transform: [{ rotate: "180deg" }],
   },
   legend: {
     flexDirection: "row",
