@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -13,91 +13,156 @@ import {
   TextInput,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { GetDanhSachBanAn, SetTrangThai1, SetTrangThai2, BanAnResponse } from "../../services/banAnService"
+import { DatBan, DatBanRequest, ChiTietDatBanModel } from "../../services/datBanService"
+import { GetDanhSachThucDon, ThucDonItem } from "../../services/thucDonService"
+import { getTaiKhoanId } from "../../services/storage"
 
 // ================= JSON DỮ LIỆU ==================
-const tablesData = [
-  { id: "1", ten: "A1", tang: "Tầng 1" },
-  { id: "2", ten: "A2", tang: "Tầng 1" },
-  { id: "3", ten: "A3", tang: "Tầng 1" },
-  { id: "4", ten: "A4", tang: "Tầng 1" },
-  { id: "5", ten: "A5", tang: "Tầng 1" },
-  { id: "6", ten: "A6", tang: "Tầng 1" },
-  { id: "7", ten: "A7", tang: "Tầng 1" },
-  { id: "8", ten: "A8", tang: "Tầng 1" },
-  { id: "9", ten: "A9", tang: "Tầng 1" },
-  { id: "10", ten: "A10", tang: "Tầng 1" },
-  { id: "21", ten: "B1", tang: "Tầng 2" },
-  { id: "22", ten: "B2", tang: "Tầng 2" },
-  { id: "23", ten: "B3", tang: "Tầng 2" },
-  { id: "24", ten: "B4", tang: "Tầng 2" },
-  { id: "25", ten: "B5", tang: "Tầng 2" },
-  { id: "26", ten: "B6", tang: "Tầng 2" },
-  { id: "27", ten: "B7", tang: "Tầng 2" },
-  { id: "28", ten: "B8", tang: "Tầng 2" },
-  { id: "29", ten: "B9", tang: "Tầng 2" },
-  { id: "30", ten: "B10", tang: "Tầng 2" },
-]
-
-const menuData = [
-  { id: "5", ten: "Gỏi cuốn tôm thịt", danhMuc: "Món khai vị" },
-  { id: "9", ten: "Salad rau trộn dầu giấm", danhMuc: "Món khai vị" },
-  { id: "11", ten: "Tôm hấp bia", danhMuc: "Món khai vị" },
-  
-  { id: "1", ten: "Cơm chiên hải sản", danhMuc: "Món chính" },
-  { id: "2", ten: "Phở bò tái", danhMuc: "Món chính" },
-  { id: "3", ten: "Mì xào bò", danhMuc: "Món chính" },
-  { id: "4", ten: "Lẩu thái hải sản", danhMuc: "Món chính" },
-  { id: "6", ten: "Bò lúc lắc", danhMuc: "Món chính" },
-  { id: "7", ten: "Cá hồi nướng bơ tỏi", danhMuc: "Món chính" },
-  { id: "13", ten: "Cơm tấm sườn bì chả", danhMuc: "Món chính" },
-  { id: "14", ten: "Mì Ý sốt bò bằm", danhMuc: "Món chính" },
-  
-  { id: "8", ten: "Cánh gà chiên nước mắm", danhMuc: "Món phụ" },
-  { id: "10", ten: "Sườn nướng mật ong", danhMuc: "Món phụ" },
-  { id: "12", ten: "Cháo hải sản", danhMuc: "Món phụ" },
-  
-  { id: "15", ten: "Trà đào cam sả", danhMuc: "Đồ uống" },
-]
+interface MenuItem {
+  id: string
+  ten: string
+  danhMuc: string
+}
 
 // ================= INTERFACE ==================
 interface Table {
-  id: string
-  ten: string
+  id: number
+  tenBan: string
+  trangThai: number
+  idTang: number
   tang: string
-  trangThai: "trong" | "dat"
-  soGhe: number
+  soGhe?: number
   monAn?: string[]
 }
 
-// ================= DATA MẪU ==================
-const prepareTables = (): Table[] =>
-  tablesData.map((item) => ({
-    id: item.id,
-    ten: item.ten,
-    tang: item.tang,
-    trangThai: Math.random() > 0.5 ? "trong" : "dat",
-    soGhe: Math.floor(Math.random() * 6) + 4,
-    monAn: [],
-  }))
-
 // ================= COMPONENT ==================
 export default function BookingScreen() {
-  const [tables, setTables] = useState<Table[]>(prepareTables())
+  const [tables, setTables] = useState<Table[]>([])
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
   const [selectedFloor, setSelectedFloor] = useState<string | null>(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [search, setSearch] = useState("")
   const [selectedMenu, setSelectedMenu] = useState<string[]>([])
   const [expandedCategories, setExpandedCategories] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentSelectedTableId, setCurrentSelectedTableId] = useState<number | null>(null)
+  const [taiKhoanId, setTaiKhoanId] = useState<number | null>(null)
+  const [soNguoi, setSoNguoi] = useState<number>(1)
+  const [ghiChu, setGhiChu] = useState<string>("")
+  const [menuData, setMenuData] = useState<MenuItem[]>([])
+  const [danhSachYeuThich, setDanhSachYeuThich] = useState<MenuItem[]>([])
+
+  // Load dữ liệu bàn từ API và taiKhoanId từ storage
+  useEffect(() => {
+    loadTables()
+    loadTaiKhoanId()
+  }, [])
+
+  const loadTaiKhoanId = async () => {
+    try {
+      const id = await getTaiKhoanId()
+      setTaiKhoanId(id)
+      console.log('taiKhoanId từ storage:', id)
+      // Load menu data sau khi có taiKhoanId
+      if (id) {
+        await loadMenuData(id)
+      }
+    } catch (error) {
+      console.error('Lỗi khi load taiKhoanId:', error)
+    }
+  }
+
+  const loadMenuData = async (userId?: number) => {
+    try {
+      console.log('Đang gọi API GetDanhSachThucDon...')
+      const response = await GetDanhSachThucDon(userId ?? undefined)
+      console.log('Dữ liệu thực đơn từ API:', response)
+      
+      // Chuyển đổi dữ liệu từ API sang format cần thiết
+      const formattedMenu: MenuItem[] = response.danhSachBan.map((item: ThucDonItem) => ({
+        id: String(item.id),
+        ten: item.tenMon,
+        danhMuc: item.monChinh ? "Món chính" : "Món phụ"
+      }))
+      
+      // Xử lý danh sách yêu thích nếu có
+      const formattedYeuThich: MenuItem[] = response.danhSachYeuThich?.map((item) => ({
+        id: String(item.id),
+        ten: item.tenMon,
+        danhMuc: "Món yêu thích"
+      })) || []
+      
+      console.log('Dữ liệu menu đã format:', formattedMenu)
+      console.log('Dữ liệu yêu thích đã format:', formattedYeuThich)
+      setMenuData(formattedMenu)
+      setDanhSachYeuThich(formattedYeuThich)
+    } catch (error) {
+      console.error('Lỗi khi load dữ liệu thực đơn:', error)
+      Alert.alert("Lỗi", "Không thể tải thực đơn. Vui lòng thử lại.")
+    }
+  }
+
+  const loadTables = async () => {
+    try {
+      setLoading(true)
+      console.log('Đang gọi API GetDanhSachBanAn...')
+      const banAnData = await GetDanhSachBanAn()
+      console.log('Dữ liệu từ API:', banAnData)
+      
+      // Chuyển đổi dữ liệu từ API sang format cần thiết
+      const formattedTables: Table[] = banAnData.map((item: BanAnResponse) => ({
+        id: item.id,
+        tenBan: item.tenBan,
+        trangThai: item.trangThai,
+        idTang: item.idTang,
+        tang: `Tầng ${item.idTang}`,
+        soGhe: Math.floor(Math.random() * 6) + 4, // Tạm thời random, có thể lấy từ API sau
+        monAn: []
+      }))
+      
+      console.log('Dữ liệu đã format:', formattedTables)
+      setTables(formattedTables)
+    } catch (error) {
+      console.error('Lỗi khi load dữ liệu bàn:', error)
+      Alert.alert("Lỗi", "Không thể tải danh sách bàn. Vui lòng thử lại.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Chọn bàn và gọi API
+  const handleTableSelect = async (table: Table) => {
+    try {
+      // Nếu có bàn đang chọn trước đó, reset về trạng thái 1
+      if (currentSelectedTableId && currentSelectedTableId !== table.id) {
+        await SetTrangThai1(currentSelectedTableId)
+      }
+
+      // Set trạng thái 2 cho bàn mới chọn
+      await SetTrangThai2(table.id)
+      
+      // Cập nhật state
+      setCurrentSelectedTableId(table.id)
+      setSelectedTable(table)
+      
+      // Mở modal chọn món
+      setModalVisible(true)
+      
+    } catch (error) {
+      console.error('Lỗi khi chọn bàn:', error)
+      Alert.alert("Lỗi", "Không thể chọn bàn. Vui lòng thử lại.")
+    }
+  }
 
   // Mở modal chọn món
   const showTableInfo = (table: Table) => {
-    if (table.trangThai === "dat") {
+    console.log('showTableInfo called with table:', table)
+    if (table.trangThai === 2) { // Trạng thái 2 = đã đặt
       Alert.alert("Bàn đã được đặt", "Vui lòng chọn bàn khác.")
       return
     }
-    setSelectedTable(table)
-    setModalVisible(true)
+    handleTableSelect(table)
   }
 
   const toggleMenuItem = (id: string) => {
@@ -116,23 +181,65 @@ export default function BookingScreen() {
     }
   }
 
-  const confirmOrder = () => {
+  const confirmOrder = async () => {
     if (!selectedTable) return
 
-    const updatedTables: Table[] = tables.map((t) =>
-      t.id === selectedTable.id
-        ? { ...t, trangThai: "dat" as "dat", monAn: selectedMenu }
-        : t,
-    )
+    // Kiểm tra taiKhoanId
+    if (!taiKhoanId) {
+      Alert.alert("Lỗi", "Vui lòng đăng nhập để đặt bàn.")
+      return
+    }
 
-    setTables(updatedTables)
-    setModalVisible(false)
-    setSelectedMenu([])
+    try {
+      // Chuyển đổi selectedMenu sang ChiTietDatBanModel
+      const chiTietDatBans: ChiTietDatBanModel[] = selectedMenu.map((monAnId) => ({
+        donDatBanId: 0, // Sẽ được set bởi server
+        banAnId: selectedTable.id,
+        monAnId: parseInt(monAnId),
+        soLuong: 1, // Mặc định 1 phần
+        ghiChu: ""
+      }))
 
-    Alert.alert(
-      "✅ Đặt bàn thành công!",
-      `Bàn ${selectedTable.ten} đã được đặt với ${selectedMenu.length} món.`,
-    )
+      // Tạo request cho API
+      const datBanRequest: DatBanRequest = {
+        taiKhoanId: taiKhoanId,
+        soNguoi: soNguoi,
+        trangThai: "Đã đặt",
+        ghiChu: ghiChu,
+        chiTietDatBans: chiTietDatBans
+      }
+
+      console.log('Gửi request đặt bàn:', datBanRequest)
+      
+      // Gọi API đặt bàn
+      const response = await DatBan(datBanRequest)
+      console.log('Response từ API:', response)
+
+      if (response.statusCode === 200) {
+        // Cập nhật local state
+        const updatedTables: Table[] = tables.map((t) =>
+          t.id === selectedTable.id
+            ? { ...t, trangThai: 2, monAn: selectedMenu }
+            : t,
+        )
+
+        setTables(updatedTables)
+        setModalVisible(false)
+        setSelectedMenu([])
+        setCurrentSelectedTableId(null)
+        setGhiChu("")
+
+        Alert.alert(
+          "✅ Đặt bàn thành công!",
+          `Bàn ${selectedTable.tenBan} đã được đặt với ${selectedMenu.length} món.\nMã đơn: ${response.donDatBanId}`,
+        )
+      } else {
+        Alert.alert("Lỗi", response.message || "Không thể đặt bàn. Vui lòng thử lại.")
+      }
+    } catch (error) {
+      console.error('Lỗi khi đặt bàn:', error)
+      Alert.alert("Lỗi", "Không thể đặt bàn. Vui lòng thử lại.")
+    }
   }
 
   const groupedTables = tables.reduce(
@@ -144,23 +251,28 @@ export default function BookingScreen() {
     {} as Record<string, Table[]>,
   )
 
-  const filteredMenu = menuData.filter((item) =>
+  // Kết hợp menu data và danh sách yêu thích
+  const allMenuData = [...menuData, ...danhSachYeuThich]
+  
+  const filteredMenu = allMenuData.filter((item) =>
     item.ten.toLowerCase().includes(search.toLowerCase()),
   )
-
+  
   // Nhóm món ăn theo danh mục
-  const groupedMenu = filteredMenu.reduce((acc, item) => {
+  const groupedMenu = allMenuData.reduce((acc, item) => {
     if (!acc[item.danhMuc]) acc[item.danhMuc] = []
     acc[item.danhMuc].push(item)
     return acc
-  }, {} as Record<string, typeof menuData>)
+  }, {} as Record<string, typeof allMenuData>)
 
   const categories = Object.keys(groupedMenu)
 
   const renderTable = (table: Table, isDisabled: boolean) => {
+    console.log(`Rendering table ${table.tenBan}, isDisabled: ${isDisabled}, trangThai: ${table.trangThai}`)
     let backgroundColor = "#D0D0D0"
-    if (table.trangThai === "trong") backgroundColor = "#4CAF50"
-    if (selectedTable?.id === table.id) backgroundColor = "#FFA500"
+    if (table.trangThai === 1) backgroundColor = "#4CAF50" // Trạng thái 1 = trống
+    if (table.trangThai === 2) backgroundColor = "#D0D0D0" // Trạng thái 2 = đã đặt
+    if (currentSelectedTableId === table.id) backgroundColor = "#FFA500" // Bàn đang chọn
 
     return (
       <TouchableOpacity
@@ -170,19 +282,34 @@ export default function BookingScreen() {
           { backgroundColor, opacity: isDisabled ? 0.5 : 1 },
         ]}
         activeOpacity={0.8}
-        onLongPress={() => !isDisabled && showTableInfo(table)}
+        onPress={() => {
+          console.log(`Table ${table.tenBan} pressed, isDisabled: ${isDisabled}`)
+          if (!isDisabled) {
+            showTableInfo(table)
+          }
+        }}
         disabled={isDisabled}
       >
         <Ionicons name="restaurant" size={28} color="#fff" />
-        <Text style={styles.tableName}>{table.ten}</Text>
+        <Text style={styles.tableName}>{table.tenBan}</Text>
         <Text style={styles.seatCount}>{table.soGhe} ghế</Text>
       </TouchableOpacity>
     )
   }
 
   const floors = Object.keys(groupedTables).sort()
-  const availableCount = tables.filter((t) => t.trangThai === "trong").length
-  const bookedCount = tables.filter((t) => t.trangThai === "dat").length
+  const availableCount = tables.filter((t) => t.trangThai === 1).length
+  const bookedCount = tables.filter((t) => t.trangThai === 2).length
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Đang tải danh sách bàn...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -241,7 +368,7 @@ export default function BookingScreen() {
                 <Text style={styles.floorTitle}>{floor}</Text>
                 <View style={styles.tablesGrid}>
                   {groupedTables[floor].map((table) =>
-                    renderTable(table, isInactive),
+                    renderTable(table, false), // Không disable bàn nào cả
                   )}
                 </View>
               </View>
@@ -255,7 +382,7 @@ export default function BookingScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              Chọn món cho bàn {selectedTable?.ten}
+              Chọn món cho bàn {selectedTable?.tenBan}
             </Text>
 
             <TextInput
@@ -264,6 +391,23 @@ export default function BookingScreen() {
               value={search}
               onChangeText={setSearch}
             />
+
+            {/* Input số người và ghi chú */}
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.searchInput, { flex: 1, marginRight: 8 }]}
+                placeholder="Số người"
+                value={soNguoi.toString()}
+                onChangeText={(text) => setSoNguoi(parseInt(text) || 1)}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={[styles.searchInput, { flex: 2, marginLeft: 8 }]}
+                placeholder="Ghi chú (tùy chọn)"
+                value={ghiChu}
+                onChangeText={setGhiChu}
+              />
+            </View>
 
             <ScrollView style={{ marginTop: 10, maxHeight: 400 }}>
               {categories.map((category) => (
@@ -409,6 +553,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
+  inputRow: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
   categoryContainer: {
     marginBottom: 8,
     borderWidth: 1,
@@ -444,4 +592,14 @@ const styles = StyleSheet.create({
   confirmText: { color: "#fff", fontWeight: "bold" },
   cancelBtn: { marginTop: 10, alignItems: "center" },
   cancelText: { color: "#1976D2", fontWeight: "600" },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
+  },
 })

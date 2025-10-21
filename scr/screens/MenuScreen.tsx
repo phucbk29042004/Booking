@@ -1,66 +1,76 @@
 "use client"
 
-import React, { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, Image, Modal } from "react-native"
+import React, { useEffect, useState } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, Image, Modal, Alert } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-
-const menuData = {
-  khaiVi: [
-    { id: "5", ten: "Gỏi cuốn tôm thịt" },
-    { id: "9", ten: "Salad rau trộn dầu giấm" },
-  ],
-  monChinh: [
-    { id: "2", ten: "Phở bò tái" },
-    { id: "1", ten: "Cơm chiên hải sản" },
-    { id: "3", ten: "Mì xào bò" },
-    { id: "6", ten: "Bò lúc lắc" },
-    { id: "7", ten: "Cá hồi nướng bơ tỏi" },
-    { id: "8", ten: "Cánh gà chiên nước mắm" },
-    { id: "4", ten: "Lẩu thái hải sản" },
-    { id: "10", ten: "Sườn nướng mật ong" },
-    { id: "13", ten: "Cơm tấm sườn bì chả" },
-    { id: "12", ten: "Cháo hải sản" },
-    { id: "14", ten: "Mì Ý sốt bò bằm" },
-    { id: "11", ten: "Tôm hấp bia" },
-  ],
-  monPhu: [],
-  doUongTrangMieng: [
-    { id: "15", ten: "Trà đào cam sả" },
-    { id: "16", ten: "Cà phê đá" },
-    { id: "17", ten: "Nước ép cam" },
-    { id: "18", ten: "Sinh tố bơ" },
-    { id: "19", ten: "Kem dâu" },
-    { id: "20", ten: "Chè đậu xanh" },
-    { id: "21", ten: "Bánh flan" },
-    { id: "22", ten: "Nước ngọt các loại" },
-  ],
+import { GetDanhSachThucDon, ThucDonItem, MonAnYeuThich, ThemMonAnYeuThich, XoaMonAnYeuThich } from "../../services/thucDonService"
+import { getTaiKhoanId } from "../../services/storage"
+type MenuItem = { id: string; ten: string; gia?: number; monChinh?: boolean; hinhAnh?: string }
+type MenuBuckets = {
+  yeuThich: MenuItem[]
+  monChinh: MenuItem[]
+  monPhu: MenuItem[]
 }
-
-type TabKey = keyof typeof menuData
+type TabKey = keyof MenuBuckets
 
 export default function MenuScreen({ route }: any) {
   const initialTab = route?.params?.initialTab || "khaiVi"
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab as TabKey)
   const [search, setSearch] = useState("")
   const [detailVisible, setDetailVisible] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<{ id: string; ten: string } | null>(null)
+  const [selectedItem, setSelectedItem] = useState<{ id: string; ten: string; hinhAnh?: string; gia?: number } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [taiKhoanId, setTaiKhoanId] = useState<number | null>(null)
+  const [danhSach, setDanhSach] = useState<ThucDonItem[]>([])
+  const [yeuThich, setYeuThich] = useState<MonAnYeuThich[] | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (route?.params?.initialTab) {
       setActiveTab(route.params.initialTab as TabKey)
     }
   }, [route?.params?.initialTab])
 
-  const filteredMenu = menuData[activeTab].filter((item) => item.ten.toLowerCase().includes(search.toLowerCase()))
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const id = await getTaiKhoanId()
+        setTaiKhoanId(id)
+        const res = await GetDanhSachThucDon(id ?? undefined)
+        console.log('API response:', res)
+        console.log('Danh sách món:', res.danhSachBan)
+        console.log('Món yêu thích:', res.danhSachYeuThich)
+        setDanhSach(res.danhSachBan || [])
+        setYeuThich(res.danhSachYeuThich || null)
+        if ((res.danhSachYeuThich?.length || 0) > 0) {
+          setActiveTab("yeuThich")
+        }
+      } catch (e) {
+        console.error('Lỗi tải thực đơn:', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    init()
+  }, [])
 
-  const openDetail = (item: { id: string; ten: string }) => {
+  const buckets: MenuBuckets = {
+    yeuThich: (yeuThich || []).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, hinhAnh: x.hinhAnh })),
+    monChinh: danhSach.filter(x => x.monChinh).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, monChinh: x.monChinh, hinhAnh: x.hinhAnh })),
+    monPhu: danhSach.filter(x => !x.monChinh).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, monChinh: x.monChinh, hinhAnh: x.hinhAnh })),
+  }
+
+  const filteredMenu = (buckets[activeTab] || []).filter((item) => item.ten.toLowerCase().includes(search.toLowerCase()))
+
+  const openDetail = (item: { id: string; ten: string; hinhAnh?: string; gia?: number }) => {
+    console.log('Mở detail với item:', item)
+    console.log('URL ảnh:', item.hinhAnh)
     setSelectedItem(item)
     setDetailVisible(true)
   }
 
   const closeDetail = () => setDetailVisible(false)
 
-  const renderMenuItem = ({ item }: { item: { id: string; ten: string } }) => (
+  const renderMenuItem = ({ item }: { item: { id: string; ten: string; hinhAnh?: string; gia?: number } }) => (
     <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => openDetail(item)}>
       <View style={styles.iconContainer}>
         <Ionicons name="restaurant-outline" size={20} color="#0066CC" />
@@ -74,10 +84,9 @@ export default function MenuScreen({ route }: any) {
     <View style={styles.container}>
       <View style={styles.tabContainer}>
         {[
-          { key: "khaiVi", label: "Khai vị" },
+          { key: "yeuThich", label: "Món yêu thích" },
           { key: "monChinh", label: "Món chính" },
           { key: "monPhu", label: "Món phụ" },
-          { key: "doUongTrangMieng", label: "Đồ uống & Tráng miệng" },
         ].map((tab) => (
           <TouchableOpacity
             key={tab.key}
@@ -103,22 +112,36 @@ export default function MenuScreen({ route }: any) {
         />
       </View>
 
+      {loading ? (
+        <Text style={styles.emptyText}>Đang tải thực đơn...</Text>
+      ) : (
       <FlatList
         data={filteredMenu}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         renderItem={renderMenuItem}
         ListEmptyComponent={<Text style={styles.emptyText}>Không có món trong mục này</Text>}
         contentContainerStyle={{ paddingVertical: 8 }}
         scrollEnabled={true}
-      />
+      />)}
 
       <Modal visible={detailVisible} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Image source={{ uri: "https://picsum.photos/seed/food/600/360" }} style={styles.modalImage} />
+            <Image 
+              source={{ uri: selectedItem?.hinhAnh || "https://picsum.photos/seed/food/600/360" }} 
+              style={styles.modalImage}
+              onError={(error) => {
+                console.log('Lỗi load ảnh:', error.nativeEvent.error)
+              }}
+              onLoad={() => {
+                console.log('Ảnh đã load thành công:', selectedItem?.hinhAnh)
+              }}
+            />
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>{selectedItem?.ten}</Text>
-              <Text style={styles.modalPrice}>Giá: 89.000đ</Text>
+              <Text style={styles.modalPrice}>
+                Giá: {selectedItem?.gia ? `${selectedItem.gia.toLocaleString()}đ` : 'Liên hệ'}
+              </Text>
               <Text style={styles.modalDesc}>
                 Món ăn được chế biến tươi mỗi ngày, hương vị đậm đà. Bạn có thể thêm ghi chú khi gọi món.
               </Text>
@@ -127,9 +150,48 @@ export default function MenuScreen({ route }: any) {
                 <TouchableOpacity style={styles.btnGhost} onPress={closeDetail}>
                   <Text style={styles.btnGhostText}>Đóng</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.btnPrimary} onPress={closeDetail}>
-                  <Ionicons name="add-circle-outline" size={18} color="#fff" />
-                  <Text style={styles.btnPrimaryText}>Thêm vào chọn</Text>
+                <TouchableOpacity
+                  style={styles.btnPrimary}
+                  onPress={async () => {
+                    try {
+                      if (!selectedItem) return
+                      if (!taiKhoanId) {
+                        Alert.alert("Lỗi", "Vui lòng đăng nhập để thực hiện thao tác này")
+                        return
+                      }
+                      
+                      if (activeTab === "yeuThich") {
+                        // Xóa khỏi yêu thích
+                        await XoaMonAnYeuThich(taiKhoanId, parseInt(selectedItem.id))
+                        setYeuThich((prev) => prev?.filter(x => String(x.id) !== selectedItem.id) || [])
+                        Alert.alert("Thành công", "Đã xóa khỏi món yêu thích")
+                      } else {
+                        // Thêm vào yêu thích
+                        await ThemMonAnYeuThich(taiKhoanId, parseInt(selectedItem.id))
+                        setYeuThich((prev) => {
+                          const exists = prev?.some(x => String(x.id) === selectedItem.id)
+                          if (exists) return prev || []
+                          const next = [...(prev || []), { 
+                            id: parseInt(selectedItem.id), 
+                            tenMon: selectedItem.ten, 
+                            gia: selectedItem.gia || 0,
+                            hinhAnh: selectedItem.hinhAnh || ""
+                          }]
+                          return next
+                        })
+                        Alert.alert("Thành công", "Đã thêm vào món yêu thích")
+                      }
+                      setDetailVisible(false)
+                    } catch (e) {
+                      console.error('API error:', e)
+                      Alert.alert("Lỗi", "Không thể thực hiện thao tác. Vui lòng thử lại.")
+                    }
+                  }}
+                >
+                  <Ionicons name={activeTab === "yeuThich" ? "heart-dislike-outline" : "heart-outline"} size={18} color="#fff" />
+                  <Text style={styles.btnPrimaryText}>
+                    {activeTab === "yeuThich" ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

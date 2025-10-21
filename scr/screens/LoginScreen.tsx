@@ -11,24 +11,31 @@ import {
   Alert,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { LoginHandle, saveTaiKhoanId } from "../../services"
 import { useAuth } from "../context/AuthContext"
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const { login } = useAuth()
+  const { loginWithId } = useAuth()
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ email và mật khẩu")
       return
     }
 
-    const success = login(email, password)
-    if (success) {
-      Alert.alert("Thành công", "Đăng nhập thành công!")
-    } else {
-      Alert.alert("Lỗi", "Email hoặc mật khẩu không đúng")
+    try {
+      const resp = await LoginHandle(email, password)
+      if (resp.success && resp.idTaiKhoan) {
+        await saveTaiKhoanId(resp.idTaiKhoan)
+        loginWithId(resp.idTaiKhoan, email)
+        // Không cần replace; RootNavigator sẽ tự switch sang Main theo isLoggedIn
+      } else {
+        Alert.alert("Lỗi", resp.message || "Đăng nhập thất bại")
+      }
+    } catch (error: any) {
+      Alert.alert("Lỗi", error?.message || "Có lỗi xảy ra khi đăng nhập")
     }
   }
 

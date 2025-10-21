@@ -1,4 +1,5 @@
-import { SafeAreaView, View, Text, StyleSheet, ScrollView, TextInput, Image, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TextInput, Image, TouchableOpacity } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 
 const categories = [
@@ -8,29 +9,6 @@ const categories = [
   { id: "4", title: "Đồ uống & Tráng miệng", image: "https://picsum.photos/103" },
 ]
 
-const products = [
-  {
-    id: "1",
-    name: "Salad rau củ",
-    brand: "HealthyFood",
-    price: 8.99,
-    image: "https://picsum.photos/200",
-  },
-  {
-    id: "2",
-    name: "Pizza phô mai",
-    brand: "Napoli",
-    price: 12.5,
-    image: "https://picsum.photos/201",
-  },
-  {
-    id: "3",
-    name: "Sinh tố xoài",
-    brand: "Freshy",
-    price: 5.0,
-    image: "https://picsum.photos/202",
-  },
-]
 
 export default function HomeScreen({ navigation }: any) {
   return (
@@ -94,20 +72,6 @@ export default function HomeScreen({ navigation }: any) {
           ))}
         </View>
 
-        {/* Sản phẩm */}
-        <Text style={styles.sectionTitle}>Món ăn được yêu thích</Text>
-        <View style={styles.productGrid}>
-          {products.map((item) => (
-            <View key={item.id} style={styles.productCard}>
-              <View style={styles.productImageContainer}>
-                <Image source={{ uri: item.image }} style={styles.productImage} />
-              </View>
-              <Text style={styles.productBrand}>{item.brand}</Text>
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
-            </View>
-          ))}
-        </View>
       </ScrollView>
     </SafeAreaView>
   )
@@ -246,55 +210,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#333333",
     fontWeight: "500",
-  },
-  productGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  productCard: {
-    width: "47%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E8EFFF",
-    shadowColor: "#0066CC",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  productImageContainer: {
-    width: "100%",
-    height: 110,
-    borderRadius: 10,
-    overflow: "hidden",
-    backgroundColor: "#F0F5FF",
-    marginBottom: 10,
-  },
-  productImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  productBrand: {
-    fontSize: 11,
-    color: "#999999",
-    marginBottom: 4,
-    fontWeight: "500",
-  },
-  productName: {
-    fontWeight: "600",
-    color: "#333333",
-    marginBottom: 6,
-    fontSize: 14,
-  },
-  productPrice: {
-    color: "#0066CC",
-    fontWeight: "700",
-    fontSize: 15,
   },
 })

@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, ReactNode } from "react"
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react"
+import { getTaiKhoanId, removeTaiKhoanId } from "../../services"
 
 interface User {
   id: string
@@ -10,6 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => boolean
+  loginWithId: (id: number, email?: string) => void
   logout: () => void
   isLoggedIn: boolean
 }
@@ -36,27 +38,54 @@ const MOCK_USERS = [
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const login = (email: string, password: string): boolean => {
-    // Tìm user trong mock data
-    const foundUser = MOCK_USERS.find(
-      (u) => u.email === email && u.password === password
-    )
+  // Check if user is logged in on app start
+  useEffect(() => {
+    checkAuthStatus()
+  }, [])
 
-    if (foundUser) {
-      setUser({
-        id: foundUser.id,
-        name: foundUser.name,
-        email: foundUser.email,
-        phone: foundUser.phone,
-      })
-      return true
+  const checkAuthStatus = async () => {
+    try {
+      const taiKhoanId = await getTaiKhoanId()
+      if (taiKhoanId) {
+        // User is logged in, set basic user info
+        setUser({
+          id: taiKhoanId.toString(),
+          name: "User",
+          email: "user@example.com",
+          phone: "",
+        })
+      }
+    } catch (error) {
+      console.error("Error checking auth status:", error)
+    } finally {
+      setIsLoading(false)
     }
-    return false
   }
 
-  const logout = () => {
-    setUser(null)
+  const login = (email: string, password: string): boolean => {
+    // This function is now handled by LoginScreen directly
+    // Just return true to indicate login was successful
+    return true
+  }
+
+  const loginWithId = (id: number, email?: string) => {
+    setUser({
+      id: id.toString(),
+      name: "User",
+      email: email || "user@example.com",
+      phone: "",
+    })
+  }
+
+  const logout = async () => {
+    try {
+      await removeTaiKhoanId()
+      setUser(null)
+    } catch (error) {
+      console.error("Error during logout:", error)
+    }
   }
 
   return (
@@ -64,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         login,
+        loginWithId,
         logout,
         isLoggedIn: !!user,
       }}

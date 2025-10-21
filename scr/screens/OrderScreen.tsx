@@ -1,13 +1,33 @@
-import React from "react"
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from "react-native"
+import React, { useEffect, useState } from "react"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
-
-const mockOrders = [
-  { id: "1", table: "A5", status: "Đã xác nhận", time: "18:30 - 20:00" },
-  { id: "2", table: "B2", status: "Đã hủy", time: "19:00 - 21:00" },
-]
+import { LichSuDatBan, LichSuDatBanItem } from "../../services/datBanService"
+import { getTaiKhoanId } from "../../services/storage"
 
 export default function OrderScreen({ navigation }: any) {
+  const [loading, setLoading] = useState(true)
+  const [orders, setOrders] = useState<LichSuDatBanItem[]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const id = await getTaiKhoanId()
+        if (!id) {
+          setOrders([])
+          setLoading(false)
+          return
+        }
+        const data = await LichSuDatBan(id)
+        setOrders(data)
+      } catch (e) {
+        console.error('Lỗi tải lịch sử đặt bàn:', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -17,27 +37,31 @@ export default function OrderScreen({ navigation }: any) {
         <Text style={styles.headerTitle}>Theo dõi đơn đặt bàn</Text>
         <View style={{ width: 24 }} />
       </View>
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="small" color="#1976D2" />
+          <Text style={{ marginTop: 8, color: "#666" }}>Đang tải...</Text>
+        </View>
+      ) : (
       <FlatList
-        data={mockOrders}
-        keyExtractor={(item) => item.id}
+        data={orders}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Chưa có lịch sử đặt bàn</Text>}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.tableName}>Bàn {item.table}</Text>
-            <Text style={styles.status}>
-              Trạng thái:{" "}
-              <Text
-                style={{
-                  color: item.status === "Đã hủy" ? "#E53935" : "#43A047",
-                }}
-              >
-                {item.status}
-              </Text>
-            </Text>
-            <Text style={styles.time}>{item.time}</Text>
+            <Text style={styles.tableName}>Đơn #{item.id}</Text>
+            <Text style={styles.status}>Trạng thái: <Text style={{ color: item.trangThai === 'Đã hủy' ? '#E53935' : '#43A047' }}>{item.trangThai || '—'}</Text></Text>
+            <Text style={styles.time}>Ngày đặt: {item.ngayDat} {item.gioDat ? `- ${item.gioDat}` : ''}</Text>
+            {item.chiTietDatBans?.map((ct, idx) => (
+              <View key={idx} style={{ marginTop: 6 }}>
+                <Text style={{ fontSize: 13, color: '#333' }}>Bàn: {ct.tenBan} {ct.monAnId ? `- Món: ${ct.tenMon} x${ct.soLuong || 1}` : ''}</Text>
+              </View>
+            ))}
+            {item.ghiChu ? (<Text style={{ marginTop: 6, fontSize: 12, color: '#777' }}>Ghi chú: {item.ghiChu}</Text>) : null}
           </View>
         )}
-      />
+      />)}
     </SafeAreaView>
   )
 }
@@ -67,6 +91,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+  },
+  loadingWrap: {
+    padding: 24,
+    alignItems: 'center'
   },
   card: {
     backgroundColor: "#fff",

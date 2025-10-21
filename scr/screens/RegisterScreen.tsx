@@ -11,6 +11,8 @@ import {
   ScrollView,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { RegisterHandle } from "../../services"
+import { Alert } from "react-native"
 
 export default function RegisterScreen({ navigation }: any) {
   const [name, setName] = useState("")
@@ -19,9 +21,27 @@ export default function RegisterScreen({ navigation }: any) {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
-  const handleRegister = () => {
-    // TODO: Implement register logic
-    console.log("Register:", { name, email, phone, password })
+  const handleRegister = async () => {
+    if (!email || !password) {
+      Alert.alert("Lỗi", "Vui lòng nhập email và mật khẩu")
+      return
+    }
+    if (password !== confirmPassword) {
+      Alert.alert("Lỗi", "Mật khẩu xác nhận không khớp")
+      return
+    }
+    try {
+      const resp = await RegisterHandle(email, password, phone)
+      if (resp.statusCode === 200) {
+        Alert.alert("Thành công", resp.message, [
+          { text: "OK", onPress: () => navigation.replace("Login") },
+        ])
+      } else {
+        Alert.alert("Lỗi", resp.message || "Đăng ký thất bại")
+      }
+    } catch (error: any) {
+      Alert.alert("Lỗi", error?.message || "Có lỗi xảy ra khi đăng ký")
+    }
   }
 
   return (
