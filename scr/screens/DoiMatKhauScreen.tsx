@@ -22,9 +22,15 @@ export default function DoiMatKhauScreen({ navigation, route }: any) {
     try {
       setLoading(true)
       const res = await DoiMatKhau(email, matKhauMoi)
-      Alert.alert("Thành công", res.message || "Đổi mật khẩu thành công", [
-        { text: "Đăng nhập", onPress: () => navigation.replace("Login") },
-      ])
+      // Không dùng Alert callback để tránh lag UI
+      Alert.alert("Thành công", res.message || "Đổi mật khẩu thành công")
+      // Navigate trực tiếp sau khi Alert hiển thị
+      setTimeout(() => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        })
+      }, 1500) // Đợi 1.5s để user đọc thông báo
     } catch (e: any) {
       Alert.alert("Lỗi", e?.response?.data?.message || e?.message || "Đổi mật khẩu thất bại")
     } finally {
