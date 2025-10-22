@@ -4,12 +4,14 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { DoiMatKhau } from "../../services/taiKhoanService"
 import { saveTaiKhoanId } from "../../services/storage"
+import { useAuth } from "../context/AuthContext"
 
 export default function DoiMatKhauScreen({ navigation, route }: any) {
   const [email, setEmail] = useState(route?.params?.email || "")
   const [matKhauMoi, setMatKhauMoi] = useState("")
   const [xacNhan, setXacNhan] = useState("")
   const [loading, setLoading] = useState(false)
+  const { loginWithId } = useAuth()
 
   const handleChange = async () => {
     if (!email || !matKhauMoi || !xacNhan) {
@@ -27,8 +29,8 @@ export default function DoiMatKhauScreen({ navigation, route }: any) {
       // Lưu idTaiKhoan vào AsyncStorage
       await saveTaiKhoanId(res.idTaiKhoan)
       
-      // Navigate đến HomeScreen
-      navigation.navigate("Home")
+      // Sử dụng AuthContext để trigger re-render và chuyển sang Main stack
+      loginWithId(res.idTaiKhoan, email)
     } catch (e: any) {
       Alert.alert("Lỗi", e?.response?.data?.message || e?.message || "Đổi mật khẩu thất bại")
     } finally {
