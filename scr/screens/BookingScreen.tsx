@@ -12,6 +12,7 @@ import {
   TextInput,
   Animated,
   Vibration,
+  Image,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
@@ -55,6 +56,10 @@ export default function BookingScreen() {
   const [menuData, setMenuData] = useState<MenuItem[]>([])
   const [danhSachYeuThich, setDanhSachYeuThich] = useState<MenuItem[]>([])
   const [heldTableId, setHeldTableId] = useState<number | null>(null)
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false)
+  const [qrModalVisible, setQrModalVisible] = useState(false)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("")
+  const [activeMenuTab, setActiveMenuTab] = useState<string>("yeuThich")
   
   // Animation refs cho hiệu ứng hold
   const scaleAnimations = useRef<{ [key: number]: Animated.Value }>({})
@@ -116,7 +121,9 @@ export default function BookingScreen() {
       const formattedMenu: MenuItem[] = response.danhSachBan.map((item: ThucDonItem) => ({
         id: String(item.id),
         ten: item.tenMon,
-        danhMuc: item.monChinh ? "Món chính" : "Món phụ"
+        danhMuc: item.monChinh === true ? "Món chính" : 
+                item.doUong === true ? "Đồ uống" :
+                item.trangMien === true ? "Tráng miệng" : "Món phụ"
       }))
       
       // Xử lý danh sách yêu thích nếu có
@@ -220,6 +227,29 @@ export default function BookingScreen() {
     }
   }
 
+  const handlePaymentMethod = (method: string) => {
+    if (method === "taiQuan") {
+      setSelectedPaymentMethod("Thanh Toán tại quán")
+      setPaymentModalVisible(false)
+      // Tiếp tục với việc đặt bàn
+      processOrder()
+    } else if (method === "chuyenKhoan") {
+      setPaymentModalVisible(false)
+      setQrModalVisible(true)
+    }
+  }
+
+  const handleTransferComplete = () => {
+    setSelectedPaymentMethod("Chuyển khoản")
+    setQrModalVisible(false)
+    // Tiếp tục với việc đặt bàn
+    processOrder()
+  }
+
+  const generateRandomSTK = () => {
+    return "0123456789"
+  }
+
   const confirmOrder = async () => {
     if (!selectedTable) return
 
@@ -229,23 +259,32 @@ export default function BookingScreen() {
       return
     }
 
+    // Mở modal chọn phương thức thanh toán
+    setPaymentModalVisible(true)
+  }
+
+  const processOrder = async () => {
+    if (!selectedTable || !selectedPaymentMethod) return
+
     try {
       // Chuyển đổi selectedMenu sang ChiTietDatBanModel
       const chiTietDatBans: ChiTietDatBanModel[] = selectedMenu.map((monAnId) => ({
-        donDatBanId: 0, // Sẽ được set bởi server
-        banAnId: selectedTable.id,
-        monAnId: parseInt(monAnId),
-        soLuong: 1, // Mặc định 1 phần
-        ghiChu: ""
+        DonDatBanId: 0, // Sẽ được set bởi server
+        BanAnId: selectedTable.id,
+        MonAnId: parseInt(monAnId),
+        SoLuong: 1, // Mặc định 1 phần
+        GhiChu: ""
       }))
 
       // Tạo request cho API
       const datBanRequest: DatBanRequest = {
-        taiKhoanId: taiKhoanId,
-        soNguoi: soNguoi,
-        trangThai: "Đã đặt",
-        ghiChu: ghiChu,
-        chiTietDatBans: chiTietDatBans
+        TaiKhoanId: taiKhoanId!,
+        SoNguoi: soNguoi,
+        TongTien: selectedMenu.length * 50000, // Tạm tính 50k/món, có thể tính từ API sau
+        PhuongThucThanhToan: selectedPaymentMethod,
+        TrangThai: "Đã đặt",
+        GhiChu: ghiChu,
+        ChiTietDatBans: chiTietDatBans
       }
 
       console.log('Gửi request đặt bàn:', datBanRequest)
@@ -331,6 +370,35 @@ export default function BookingScreen() {
   }, {} as Record<string, typeof allMenuData>)
 
   const categories = Object.keys(groupedMenu)
+
+  // Lọc menu theo tab đang chọn
+  const getFilteredMenuByTab = () => {
+    switch (activeMenuTab) {
+      case "yeuThich":
+        return danhSachYeuThich.filter((item) =>
+          item.ten.toLowerCase().includes(search.toLowerCase())
+        )
+      case "monChinh":
+        return menuData.filter((item) =>
+          item.danhMuc === "Món chính" && 
+          item.ten.toLowerCase().includes(search.toLowerCase())
+        )
+      case "doUong":
+        return menuData.filter((item) =>
+          item.danhMuc === "Đồ uống" && 
+          item.ten.toLowerCase().includes(search.toLowerCase())
+        )
+      case "trangMien":
+        return menuData.filter((item) =>
+          item.danhMuc === "Tráng miệng" && 
+          item.ten.toLowerCase().includes(search.toLowerCase())
+        )
+      default:
+        return filteredMenu
+    }
+  }
+
+  const currentMenuItems = getFilteredMenuByTab()
 
   const renderTable = (table: Table, isDisabled: boolean) => {
     console.log(`Rendering table ${table.tenBan}, isDisabled: ${isDisabled}, trangThai: ${table.trangThai}`)
@@ -464,6 +532,29 @@ export default function BookingScreen() {
               Chọn món cho bàn {selectedTable?.tenBan}
             </Text>
 
+            {/* Tabs chọn loại món */}
+            <View style={styles.tabContainer}>
+              {[
+                { key: "yeuThich", label: "Yêu thích" },
+                { key: "monChinh", label: "Món chính" },
+                { key: "doUong", label: "Đồ uống" },
+                { key: "trangMien", label: "Tráng miệng" },
+              ].map((tab) => (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tabButton, activeMenuTab === tab.key && styles.activeTab]}
+                  onPress={() => {
+                    setActiveMenuTab(tab.key)
+                    setSearch("")
+                  }}
+                >
+                  <Text style={[styles.tabText, activeMenuTab === tab.key && styles.activeTabText]}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <TextInput
               style={styles.searchInput}
               placeholder="Tìm món ăn..."
@@ -489,48 +580,27 @@ export default function BookingScreen() {
             </View>
 
             <ScrollView style={{ marginTop: 10, maxHeight: 400 }}>
-              {categories.map((category) => (
-                <View key={category} style={styles.categoryContainer}>
-                  <TouchableOpacity
-                    style={styles.categoryHeader}
-                    onPress={() => toggleCategory(category)}
-                  >
-                    <Text style={styles.categoryTitle}>{category}</Text>
-                    <Ionicons
-                      name={
-                        expandedCategories.includes(category)
-                          ? "chevron-up"
-                          : "chevron-down"
-                      }
-                      size={20}
-                      color="#333"
-                    />
-                  </TouchableOpacity>
-
-                  {expandedCategories.includes(category) && (
-                    <View style={styles.categoryItems}>
-                      {groupedMenu[category].map((item) => (
-                        <TouchableOpacity
-                          key={item.id}
-                          style={styles.menuItem}
-                          onPress={() => toggleMenuItem(item.id)}
-                        >
-                          <Ionicons
-                            name={
-                              selectedMenu.includes(item.id)
-                                ? "checkbox"
-                                : "square-outline"
-                            }
-                            size={22}
-                            color="#1976D2"
-                          />
-                          <Text style={styles.menuText}>{item.ten}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
+              {currentMenuItems.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.menuItem}
+                  onPress={() => toggleMenuItem(item.id)}
+                >
+                  <Ionicons
+                    name={
+                      selectedMenu.includes(item.id)
+                        ? "checkbox"
+                        : "square-outline"
+                    }
+                    size={22}
+                    color="#1976D2"
+                  />
+                  <Text style={styles.menuText}>{item.ten}</Text>
+                </TouchableOpacity>
               ))}
+              {currentMenuItems.length === 0 && (
+                <Text style={styles.emptyText}>Không có món trong mục này</Text>
+              )}
             </ScrollView>
 
             <TouchableOpacity style={styles.confirmBtn} onPress={confirmOrder}>
@@ -540,6 +610,75 @@ export default function BookingScreen() {
             <TouchableOpacity
               style={styles.cancelBtn}
               onPress={resetBookingState}
+            >
+              <Text style={styles.cancelText}>Hủy</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal chọn hình thức thanh toán */}
+      <Modal visible={paymentModalVisible} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Chọn hình thức thanh toán</Text>
+            
+            <TouchableOpacity 
+              style={styles.paymentOption} 
+              onPress={() => handlePaymentMethod("taiQuan")}
+            >
+              <Ionicons name="restaurant" size={24} color="#1976D2" />
+              <Text style={styles.paymentText}>Tại quán</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.paymentOption} 
+              onPress={() => handlePaymentMethod("chuyenKhoan")}
+            >
+              <Ionicons name="card" size={24} color="#1976D2" />
+              <Text style={styles.paymentText}>Chuyển khoản</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={() => setPaymentModalVisible(false)}
+            >
+              <Text style={styles.cancelText}>Hủy</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal QR chuyển khoản */}
+      <Modal visible={qrModalVisible} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Chuyển khoản</Text>
+            
+            <View style={styles.qrContainer}>
+              <Text style={styles.qrTitle}>Quét mã QR để thanh toán</Text>
+              <Image 
+                source={{ uri: "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MB%20Bank%20-%20STK%3A%200123456789%20-%20Chuyen%20khoan%20dat%20ban" }}
+                style={styles.qrCode}
+                resizeMode="contain"
+              />
+            </View>
+
+            <View style={styles.bankInfo}>
+              <Text style={styles.bankTitle}>Ngân hàng MB Bank</Text>
+              <Text style={styles.stkText}>STK: {generateRandomSTK()}</Text>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.transferButton} 
+              onPress={handleTransferComplete}
+            >
+              <Text style={styles.transferText}>Đã chuyển khoản</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={() => setQrModalVisible(false)}
             >
               <Text style={styles.cancelText}>Hủy</Text>
             </TouchableOpacity>
@@ -695,5 +834,129 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: "#666",
+  },
+  // Payment modal styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+  },
+  paymentOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  paymentText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+  qrContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  qrTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginBottom: 12,
+  },
+  qrCode: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  qrPlaceholder: {
+    fontSize: 14,
+    color: "#64748B",
+  },
+  bankInfo: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  bankTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginBottom: 8,
+  },
+  stkText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1976D2",
+  },
+  transferButton: {
+    backgroundColor: "#1976D2",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  transferText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  cancelButton: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  // Tab styles
+  tabContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    backgroundColor: "#E8F0FF",
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  activeTab: {
+    backgroundColor: "#0066CC",
+  },
+  tabText: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+  activeTabText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#94A3B8",
+    marginTop: 32,
+    fontSize: 14,
   },
 })

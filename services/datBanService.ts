@@ -1,19 +1,21 @@
 import api from "./api"
 
 export interface DatBanRequest{
-    taiKhoanId: number,
-    soNguoi?: number,
-    trangThai?: string,
-    ghiChu?: string,
-    chiTietDatBans?: ChiTietDatBanModel[]
+    TaiKhoanId: number,
+    SoNguoi?: number,
+    TongTien: number,
+    PhuongThucThanhToan : string,
+    TrangThai?: string,
+    GhiChu?: string,
+    ChiTietDatBans?: ChiTietDatBanModel[]
 }
 
 export interface ChiTietDatBanModel{
-    donDatBanId: number,
-    banAnId: number,
-    monAnId?: number,
-    soLuong?: number,
-    ghiChu?: string
+    DonDatBanId: number,
+    BanAnId: number,
+    MonAnId?: number,
+    SoLuong?: number,
+    GhiChu?: string
 }
 
 export interface DatBanResponse{

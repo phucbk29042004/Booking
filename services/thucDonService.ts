@@ -4,8 +4,10 @@ export interface ThucDonItem {
     id: number
     gia: number
     tenMon: string
-    monChinh: boolean
+    monChinh: boolean | null
     hinhAnh: string
+    doUong: boolean | null
+    trangMien: boolean | null
 }
 
 export interface MonAnYeuThich {

@@ -10,12 +10,13 @@ type MenuItem = { id: string; ten: string; gia?: number; monChinh?: boolean; hin
 type MenuBuckets = {
   yeuThich: MenuItem[]
   monChinh: MenuItem[]
-  monPhu: MenuItem[]
+  doUong: MenuItem[]
+  trangMien: MenuItem[]
 }
 type TabKey = keyof MenuBuckets
 
 export default function MenuScreen({ route }: any) {
-  const initialTab = route?.params?.initialTab || "khaiVi"
+  const initialTab = route?.params?.initialTab || "monChinh"
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab as TabKey)
   const [search, setSearch] = useState("")
   const [detailVisible, setDetailVisible] = useState(false)
@@ -56,8 +57,9 @@ export default function MenuScreen({ route }: any) {
 
   const buckets: MenuBuckets = {
     yeuThich: (yeuThich || []).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, hinhAnh: x.hinhAnh })),
-    monChinh: danhSach.filter(x => x.monChinh).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, monChinh: x.monChinh, hinhAnh: x.hinhAnh })),
-    monPhu: danhSach.filter(x => !x.monChinh).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, monChinh: x.monChinh, hinhAnh: x.hinhAnh })),
+    monChinh: danhSach.filter(x => x.monChinh === true).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, monChinh: x.monChinh || undefined, hinhAnh: x.hinhAnh })),
+    doUong: danhSach.filter(x => x.doUong === true).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, hinhAnh: x.hinhAnh })),
+    trangMien: danhSach.filter(x => x.trangMien === true).map(x => ({ id: String(x.id), ten: x.tenMon, gia: x.gia, hinhAnh: x.hinhAnh })),
   }
 
   const filteredMenu = (buckets[activeTab] || []).filter((item) => item.ten.toLowerCase().includes(search.toLowerCase()))
@@ -87,7 +89,8 @@ export default function MenuScreen({ route }: any) {
         {[
           { key: "yeuThich", label: "Món yêu thích" },
           { key: "monChinh", label: "Món chính" },
-          { key: "monPhu", label: "Món phụ" },
+          { key: "doUong", label: "Đồ uống" },
+          { key: "trangMien", label: "Tráng miệng" },
         ].map((tab) => (
           <TouchableOpacity
             key={tab.key}

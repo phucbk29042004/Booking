@@ -3,10 +3,9 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 
 const categories = [
-  { id: "1", title: "Món khai vị", image: "https://picsum.photos/100" },
+  { id: "1", title: "Tráng miệng", image: "https://picsum.photos/100" },
   { id: "2", title: "Món chính", image: "https://picsum.photos/101" },
-  { id: "3", title: "Món phụ", image: "https://picsum.photos/102" },
-  { id: "4", title: "Đồ uống & Tráng miệng", image: "https://picsum.photos/103" },
+  { id: "3", title: "Đồ uống", image: "https://picsum.photos/102" },
 ]
 
 
@@ -55,12 +54,11 @@ export default function HomeScreen({ navigation }: any) {
               onPress={() => {
                 // Map category titles to menu tabs
                 const tabMap: { [key: string]: string } = {
-                  "Món khai vị": "khaiVi",
+                  "Tráng miệng": "trangMien",
                   "Món chính": "monChinh",
-                  "Món phụ": "monPhu",
-                  "Đồ uống & Tráng miệng": "doUongTrangMieng",
+                  "Đồ uống": "doUong",
                 }
-                const tab = tabMap[item.title] || "khaiVi"
+                const tab = tabMap[item.title] || "monChinh"
                 navigation.navigate("Menu", { initialTab: tab })
               }}
             >

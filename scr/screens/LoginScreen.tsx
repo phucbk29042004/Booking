@@ -81,6 +81,10 @@ export default function LoginScreen({ navigation }: any) {
             <Text style={styles.loginButtonText}>Đăng nhập</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity style={{ alignItems: "center", marginTop: 12 }} onPress={() => navigation.navigate("QuenMatKhau") }>
+            <Text style={{ color: "#1976D2", fontSize: 14, fontWeight: "600" }}>Quên mật khẩu?</Text>
+          </TouchableOpacity>
+
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Chưa có tài khoản? </Text>
             <TouchableOpacity onPress={() => navigation.navigate("Register")}>
@@ -88,20 +92,6 @@ export default function LoginScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.testAccountContainer}>
-            <Text style={styles.testAccountTitle}>📝 Tài khoản test:</Text>
-            <Text style={styles.testAccountText}>Email: test@test.com</Text>
-            <Text style={styles.testAccountText}>Password: 123456</Text>
-            <TouchableOpacity
-              style={styles.testButton}
-              onPress={() => {
-                setEmail("test@test.com")
-                setPassword("123456")
-              }}
-            >
-              <Text style={styles.testButtonText}>Điền thông tin test</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -174,37 +164,6 @@ const styles = StyleSheet.create({
   registerLink: {
     fontSize: 16,
     color: "#1976D2",
-    fontWeight: "600",
-  },
-  testAccountContainer: {
-    marginTop: 30,
-    padding: 15,
-    backgroundColor: "#f0f7ff",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#1976D2",
-  },
-  testAccountTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1976D2",
-    marginBottom: 8,
-  },
-  testAccountText: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 4,
-  },
-  testButton: {
-    backgroundColor: "#1976D2",
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
-    alignItems: "center",
-  },
-  testButtonText: {
-    color: "#fff",
-    fontSize: 14,
     fontWeight: "600",
   },
 })
