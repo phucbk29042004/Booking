@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, Image, Modal, Alert } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { GetDanhSachThucDon, ThucDonItem, MonAnYeuThich, ThemMonAnYeuThich, XoaMonAnYeuThich } from "../../services/thucDonService"
 import { getTaiKhoanId } from "../../services/storage"
@@ -81,7 +82,7 @@ export default function MenuScreen({ route }: any) {
   )
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.tabContainer}>
         {[
           { key: "yeuThich", label: "Món yêu thích" },
@@ -198,7 +199,7 @@ export default function MenuScreen({ route }: any) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   )
 }
 
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
     paddingHorizontal: 12,
-    paddingTop: 12,
+    paddingTop: 8,
   },
 
   tabContainer: {

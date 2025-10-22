@@ -6,15 +6,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Alert,
   Modal,
   TextInput,
   Animated,
   Vibration,
- 
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { GetDanhSachBanAn, SetTrangThai1, SetTrangThai2, BanAnResponse } from "../../services/banAnService"
 import { DatBan, DatBanRequest, ChiTietDatBanModel } from "../../services/datBanService"
@@ -369,7 +368,7 @@ export default function BookingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Đang tải danh sách bàn...</Text>
         </View>
@@ -378,7 +377,7 @@ export default function BookingScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
