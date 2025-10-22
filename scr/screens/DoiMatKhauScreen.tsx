@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "reac
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { DoiMatKhau } from "../../services/taiKhoanService"
+import { saveTaiKhoanId } from "../../services/storage"
 
 export default function DoiMatKhauScreen({ navigation, route }: any) {
   const [email, setEmail] = useState(route?.params?.email || "")
@@ -22,8 +23,12 @@ export default function DoiMatKhauScreen({ navigation, route }: any) {
     try {
       setLoading(true)
       const res = await DoiMatKhau(email, matKhauMoi)
-      // Navigate trực tiếp không hiển thị Alert để tránh conflict
-      navigation.navigate("Login")
+      
+      // Lưu idTaiKhoan vào AsyncStorage
+      await saveTaiKhoanId(res.idTaiKhoan)
+      
+      // Navigate đến HomeScreen
+      navigation.navigate("Home")
     } catch (e: any) {
       Alert.alert("Lỗi", e?.response?.data?.message || e?.message || "Đổi mật khẩu thất bại")
     } finally {

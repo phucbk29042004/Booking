@@ -17,6 +17,11 @@ export interface ApiMessageResponse {
     message: string
 }
 
+export interface DoiMatKhauResponse {
+    message: string
+    idTaiKhoan: number
+}
+
 export async function LoginHandle(Email: string, MatKhau: string): Promise<LoginResponse>{
     const response = api.post<LoginResponse>("/api/TaiKhoan/DangNhap", {Email, MatKhau});
     return (await response).data;
@@ -44,7 +49,7 @@ export async function CheckOTP(Email: string, OTP: string): Promise<ApiMessageRe
 }
 
 // POST: api/TaiKhoan/DoiMatKhau - Backend nhận { Email, MatKhauMoi }
-export async function DoiMatKhau(Email: string, MatKhauMoi: string): Promise<ApiMessageResponse>{
-    const response = api.post<ApiMessageResponse>("/api/TaiKhoan/DoiMatKhau", { Email, MatKhauMoi });
+export async function DoiMatKhau(Email: string, MatKhauMoi: string): Promise<DoiMatKhauResponse>{
+    const response = api.post<DoiMatKhauResponse>("/api/TaiKhoan/DoiMatKhau", { Email, MatKhauMoi });
     return (await response).data;
 }
