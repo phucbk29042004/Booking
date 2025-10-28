@@ -29,6 +29,23 @@ export async function DatBan(datBan: DatBanRequest): Promise<DatBanResponse>{
     return (await response).data;
 }
 
+// ========= Hủy đặt bàn =========
+export interface HuyDatBanModel{
+    DonDatBanId: number,
+    TaiKhoanId: number,
+    LyDoHuy?: string
+}
+
+export interface HuyDatBanResponse{
+    message: string,
+    donDatBanId: number
+}
+
+export async function HuyDatBan(huyDatBan: HuyDatBanModel): Promise<HuyDatBanResponse>{
+    const response = api.post<HuyDatBanResponse>("/api/DatBan/HuyDatBan", huyDatBan);
+    return (await response).data;
+}
+
 // ========= Lịch sử đặt bàn =========
 export interface ChiTietDatBanItem{
     banAnId: number,
