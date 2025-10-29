@@ -62,16 +62,22 @@ export default function ProfileScreen({ navigation }: any) {
             <Ionicons name="chevron-forward" size={18} color="#D0D0D0" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="settings-outline" size={20} color="#0066CC" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Cài đặt tài khoản</Text>
-              <Text style={styles.menuSubtitle}>Quản lý thông tin cá nhân</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#D0D0D0" />
-          </TouchableOpacity>
+          <TouchableOpacity
+  style={styles.menuItem}
+  activeOpacity={0.85}
+  onPress={() => navigation.navigate("AccountSettings")} // ⬅️ sửa ở đây
+  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+>
+  <View style={styles.menuIconContainer}>
+    <Ionicons name="settings-outline" size={20} color="#0066CC" />
+  </View>
+  <View style={styles.menuContent}>
+    <Text style={styles.menuTitle}>Cài đặt tài khoản</Text>
+    <Text style={styles.menuSubtitle}>Quản lý thông tin cá nhân</Text>
+  </View>
+  <Ionicons name="chevron-forward" size={18} color="#D0D0D0" />
+</TouchableOpacity>
+
         </View>
 
         {/* Spacer */}

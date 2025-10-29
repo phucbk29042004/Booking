@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import ProfileScreen from "../scr/screens/ProfileScreen"
 import OrderScreen from "../scr/screens/OrderScreen"
 import NotificationScreen from "../scr/screens/NotificationScreen"
+import AccountSettingsScreen from '../scr/screens/AccountSettingsScreen';
 
 const Stack = createNativeStackNavigator()
 
@@ -12,6 +13,7 @@ export default function PersonalStackNavigator() {
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Orders" component={OrderScreen} />
       <Stack.Screen name="Notifications" component={NotificationScreen} />
+      <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
     </Stack.Navigator>
   )
 }

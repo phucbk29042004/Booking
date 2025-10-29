@@ -47,7 +47,7 @@ export default function LoginScreen({ navigation }: any) {
       >
         <View style={styles.header}>
           <Ionicons name="restaurant" size={80} color="#1976D2" />
-          <Text style={styles.title}>Chào mừng trở lại!</Text>
+          <Text style={styles.title}>Chào mừng bạn trở lại!</Text>
           <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
         </View>
 

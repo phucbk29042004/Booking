@@ -69,8 +69,7 @@ export default function DoanhThuNgayScreen() {
   chartConfig={chartConfig}
   fromZero
   showValuesOnTopOfBars
-  /* ⬇️ THÊM 2 DÒNG NÀY */
-  yAxisLabel=""      // hoặc "₫ "
+  yAxisLabel="" 
   yAxisSuffix="đ"
   style={{ borderRadius: 12, marginTop: 8 }}
 />

@@ -3,9 +3,9 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 
 const categories = [
-  { id: "1", title: "Tráng miệng", image: "https://picsum.photos/100" },
-  { id: "2", title: "Món chính", image: "https://picsum.photos/101" },
-  { id: "3", title: "Đồ uống", image: "https://picsum.photos/102" },
+  { id: "1", title: "Tráng miệng", image: "https://pixabay.com/get/gc6d03082eaf4cc2e42ba6e578c53d75edd1ffdd5138b52ebb893ba576774a8166b45d7dec55fb7d4351388cb96a1eccfe6513967dce219b5169015a42e4f712c_1280.jpg" },
+  { id: "2", title: "Món chính", image: "https://pixabay.com/get/g8d037be9a250fd7983d76a9d7b4959b5273a73b5d862eadaa685df23af4fd101a221a9ba51dcec701505ceb0478cb268915e85a5d79ebb10865a5bf5e44939f2_1280.jpg" },
+  { id: "3", title: "Đồ uống", image: "https://pixabay.com/get/g98a7e97d50f4f32644a52a0261faf4f399d4547138f77246c3ec922eaafa2aa00ab4f626779ec899432f965c741efa3d8b113afee76260b3e3f5a3135e1bd925_1280.jpg" },
 ]
 
 
