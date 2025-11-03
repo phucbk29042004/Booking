@@ -8,6 +8,7 @@ export interface ThucDonItem {
     hinhAnh: string
     doUong: boolean | null
     trangMien: boolean | null
+    moTa?: string | null
 }
 
 export interface MonAnYeuThich {

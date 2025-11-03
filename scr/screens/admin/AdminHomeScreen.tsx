@@ -17,11 +17,20 @@ export default function AdminHomeScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Bảng điều khiển Admin</Text>
+
+      {/* Bàn ăn */}
       <View style={styles.card}>
         <Item title="Tạo bàn ăn" icon="add" to="TaoBanAn" />
-        <Item title="Xoá bàn ăn" icon="trash-outline" to="XoaBanAn" />
+        <Item title="Hủy trạng thái bàn ăn" icon="trash-outline" to="XoaBanAn" />
       </View>
 
+      {/* Thực đơn */}
+      <Text style={[styles.title, { marginTop: 16 }]}>Thực đơn</Text>
+      <View style={styles.card}>
+        <Item title="Quản lý thực đơn" icon="restaurant-outline" to="ThucDon" />
+      </View>
+
+      {/* Doanh thu */}
       <Text style={[styles.title, { marginTop: 16 }]}>Doanh thu</Text>
       <View style={styles.card}>
         <Item title="Theo ngày" icon="calendar-outline" to="DTNgay" />
@@ -29,6 +38,8 @@ export default function AdminHomeScreen({ navigation }: any) {
         <Item title="Theo năm" icon="calendar-sharp" to="DTNam" />
         <Item title="Tổng quan" icon="stats-chart-outline" to="DTThongKe" />
       </View>
+
+      
     </View>
   );
 }

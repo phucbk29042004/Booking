@@ -7,7 +7,9 @@ import DoanhThuThangScreen from '../scr/screens/admin/DoanhThuThangScreen';
 import DoanhThuNamScreen from '../scr/screens/admin/DoanhThuNamScreen';
 import DoanhThuThongKeChungScreen from '../scr/screens/admin/DoanhThuThongKeChungScreen';
 import TaoBanAnScreen from '../scr/screens/admin/TaoBanAnScreen';
-import XoaBanAnScreen from '../scr/screens/admin/XoaBanAnScreen';
+import XoaBanAnScreen from '../scr/screens/admin/HuyTrangThaiBanAnScreen';
+import ThucDonScreen from "../scr/screens/admin/ThucDonScreen";
+
 
 const Stack = createStackNavigator();
 
@@ -17,6 +19,7 @@ export default function AdminStackNavigator() {
       <Stack.Screen name="AdminHome" component={AdminHomeScreen} options={{ title: 'Admin' }} />
       <Stack.Screen name="TaoBanAn" component={TaoBanAnScreen} options={{ title: 'Tạo bàn' }} />
       <Stack.Screen name="XoaBanAn" component={XoaBanAnScreen} options={{ title: 'Xoá bàn' }} />
+      <Stack.Screen name="ThucDon" component={ThucDonScreen} options={{ title: "Quản lý Thực đơn" }} />
       <Stack.Screen name="DTNgay" component={DoanhThuNgayScreen} options={{ title: 'DT ngày' }} />
       <Stack.Screen name="DTThang" component={DoanhThuThangScreen} options={{ title: 'DT tháng' }} />
       <Stack.Screen name="DTNam" component={DoanhThuNamScreen} options={{ title: 'DT năm' }} />

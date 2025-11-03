@@ -53,7 +53,6 @@ export default function MainTabNavigator() {
                 <Text style={{ color: "#fff", fontWeight: "700" }}>Xác nhận</Text>
               </TouchableOpacity>
             </View>
-            <Text style={{ marginTop: 8, color: "#6b7280" }}>Gợi ý: 123456</Text>
           </View>
         </View>
       </Modal>
