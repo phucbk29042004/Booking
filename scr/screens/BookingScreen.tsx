@@ -103,9 +103,13 @@ export default function BookingScreen() {
 
   // Load dữ liệu
   useEffect(() => {
-    loadTables()
     loadTaiKhoanId()
   }, [])
+
+  // Tự refetch bàn khi ngày hiển thị thay đổi
+  useEffect(() => {
+    loadTables()
+  }, [displayDate])
 
   useEffect(() => {
     return () => {
@@ -133,7 +137,7 @@ export default function BookingScreen() {
   const resetBookingState = async () => {
     if (currentSelectedTableId && isHoldingTable) {
       try {
-        await SetTrangThai1(currentSelectedTableId)
+        await SetTrangThai1(currentSelectedTableId, displayDate)
       } catch (error) {
         console.error('Lỗi trả bàn:', error)
       }
@@ -186,16 +190,22 @@ export default function BookingScreen() {
   const loadTables = async () => {
     try {
       setLoading(true)
-      const banAnData = await GetDanhSachBanAn()
-      const formattedTables: Table[] = banAnData.map((item: BanAnResponse) => ({
-        id: item.id,
-        tenBan: item.tenBan,
-        trangThai: item.trangThai,
-        idTang: item.idTang,
-        tang: `Tầng ${item.idTang}`,
-        soGhe: Math.floor(Math.random() * 6) + 4,
-        monAn: []
-      }))
+      const banAnData = await GetDanhSachBanAn(displayDate)
+
+      const formattedTables: Table[] = banAnData.map((item: BanAnResponse) => {
+        // Hiển thị theo duy nhất cờ tinhTrangDatBan: true => đã đặt (2), false => trống (1)
+        const computedTrangThai = item.tinhTrangDatBan === true ? 2 : 1
+
+        return {
+          id: item.id,
+          tenBan: item.tenBan,
+          trangThai: computedTrangThai,
+          idTang: item.idTang,
+          tang: `Tầng ${item.idTang}`,
+          soGhe: item.soChoNgoi ?? 4,
+          monAn: []
+        }
+      })
       formattedTables.forEach(table => {
         scaleAnimations.current[table.id] = new Animated.Value(1)
         holdAnimations.current[table.id] = new Animated.Value(0)
@@ -212,9 +222,9 @@ export default function BookingScreen() {
   const handleTableSelect = async (table: Table) => {
     try {
       if (currentSelectedTableId && currentSelectedTableId !== table.id) {
-        await SetTrangThai1(currentSelectedTableId)
+        await SetTrangThai1(currentSelectedTableId, displayDate)
       }
-      await SetTrangThai2(table.id)
+      await SetTrangThai2(table.id, displayDate)
       setCurrentSelectedTableId(table.id)
       setSelectedTable(table)
       startCountdown()
@@ -266,7 +276,7 @@ export default function BookingScreen() {
     stopCountdown()
     if (currentSelectedTableId) {
       try {
-        await SetTrangThai1(currentSelectedTableId)
+        await SetTrangThai1(currentSelectedTableId, displayDate)
       } catch (error) {
         console.error('Lỗi trả bàn:', error)
       }
@@ -305,6 +315,8 @@ export default function BookingScreen() {
         SoNguoi: soNguoi,
         TongTien: selectedMenu.length * 50000,
         PhuongThucThanhToan: selectedPaymentMethod,
+        // Chuẩn hoá ngày dropdown dd-MM-yyyy -> yyyy-MM-dd để backend nhận đúng
+        NgayDat: (() => { const [d,m,y] = displayDate.split('-'); return `${y}-${m}-${d}` })(),
         TrangThai: "Đã đặt",
         GhiChu: ghiChu,
         ChiTietDatBans: chiTietDatBans

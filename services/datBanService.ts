@@ -5,6 +5,7 @@ export interface DatBanRequest{
     SoNguoi?: number,
     TongTien: number,
     PhuongThucThanhToan : string,
+    NgayDat?: string,
     TrangThai?: string,
     GhiChu?: string,
     ChiTietDatBans?: ChiTietDatBanModel[]
