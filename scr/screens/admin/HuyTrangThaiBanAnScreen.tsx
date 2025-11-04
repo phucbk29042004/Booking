@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import C from "../../theme/colors";
-import { huyTrangThaiBanAn } from "../../../services/adminService"; // giữ nguyên import này
+import { huyTrangThaiBanAn } from "../../../services/adminService"; // 
 
-export default function XoaBanAnScreen() {
+export default function HuyTrangThaiBanAnScreen() {
   const [id, setId] = useState("");
 
   const onDelete = async () => {
@@ -15,7 +15,6 @@ export default function XoaBanAnScreen() {
     }
 
     try {
-      // API mới: hủy trạng thái bàn thay vì xóa
       await huyTrangThaiBanAn(numId);
       Alert.alert("Thành công", `Đã hủy trạng thái bàn #${numId}`);
       setId("");
